@@ -64,7 +64,7 @@ fmask=0177,dmask=0077,lazytime,X-mount.mkdir=600" ${bootpart} /mnt/boot
 mountpoint -q /var/cache/pacman/pkg && hostcache='-c'
 pacstrap ${hostcache} /mnt \
   base linux-zen booster linux-firmware amd-ucode \
-  btrfs-progs dosfstools gptfdisk \
+  dosfstools gptfdisk \
   git flatpak \
   micro zsh reflector mandoc less xxhash pigz unzip \
   polkit vulkan-radeon mesa \
