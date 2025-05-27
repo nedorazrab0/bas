@@ -1,0 +1,19 @@
+// Micro's config
+
+{
+  "clipboard": "terminal",
+  "colorscheme": "arch39",
+  "diffgutter": true,
+  "infobar": false,
+  "parsecursor": true,
+  "mouse": false,
+  "scrollbar": true,
+  "sucmd": "kp",
+  "statusformatl": "=== $(filename) [$(line),$(col)] $(modified)",
+  "statusformatr": "",
+  "tbasize": 2,
+  "tbastospaces": true,
+  "*.py": {
+    "tbasize": 4
+  }
+}

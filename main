@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+#
+# Arch install
+
+# Configure script
+echo '- Username:'
+read -r name
+echo '- Password:'
+stty -echo  # Do not expose a password
+read -r password
+stty echo
+echo '- Target disk name:'
+read -r disk
+
+sysblock="/sys/block/${disk}"
+blk="/dev/${disk}"
+parts="${blk}"*?
+
+# Configure pacman
+curl -f "https://raw.githubusercontent.com/nedorazrab0/bas/main/\
+cfg/etc/pacman.conf" -o /etc/pacman.conf
+
+echo '- Configuring mirrors...'
+mlist='/etc/pacman.d/mirrorlist'
+
+# Wait for reflector complete the sync
+grep -q 'Reflector' "${mlist}" || systemctl start --no-block reflector
+until grep -q 'Reflector' "${mlist}"; do
+  sleep 1
+done
+
+pacman-key --init
+pacman-key --populate archlinux
+pacman -Syy archlinux-keyring --needed --noconfirm
+
+# Disk tune
+echo 'none' > "${sysblock}/queue/scheduler"
+echo '128' > "${sysblock}/queue/nr_requests"
+echo '2' > "${sysblock}/queue/rq_affinity"
+
+# Disk partition
+cd /
+mountpoint -q /mnt && umount -vR /mnt
+umount -v "${blk}"* || true
+
+wipefs --all "${parts}" || true
+wipefs --all "${blk}"
+blkdiscard -vf "${blk}" || true
+sgdisk -Zo \
+  -n1::+64M -t1:ef00 -c1:'EFI System Partition' \
+  -n2::+ -t2:8304 -c2:'Arch Linux Root' -p "${blk}"
+
+bootpart="${blk}"*1
+rootpart="${blk}"*2
+
+mkfs.fat -F32 -n 'ESP' -v -S512 --codepage=437 ${bootpart}
+mke2fs -t ext4 -vF -L 'archlinux' -E 'discard=0' -I1024 ${rootpart}
+
+mount -t ext4 -v -o 'noatime' ${rootpart} /mnt
+mount -t vfat -v -o "noexec,nodev,nosuid,noatime,utf8=false,\
+fmask=0177,dmask=0077,lazytime,X-mount.mkdir=600" ${bootpart} /mnt/boot
+
+# Install
+mountpoint -q /var/cache/pacman/pkg && hostcache='-c'
+pacstrap ${hostcache} /mnt \
+  base linux-zen booster linux-firmware amd-ucode \
+  btrfs-progs dosfstools gptfdisk \
+  git flatpak \
+  micro zsh reflector mandoc less xxhash pigz unzip \
+  polkit vulkan-radeon mesa \
+  iptables-nft pipewire{,-alsa,-pulse,-jack} wpa_supplicant ${sbpkg}
+
+# Chroot actions
+mount -o 'bind,ro' -v /tmp/bas /mnt/mnt
+arch-chroot /mnt bash /mnt/inchroot \
+  "${name}" "${password}" "${zone}" "${sboot}" "${lang}"
+umount -v /mnt/mnt
+
+# wonderhoy
+echo '- Based end'
+sleep 2
+umount -vR /mnt
+exec systemctl poweroff
