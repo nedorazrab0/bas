@@ -1,1 +1,3 @@
-# abs
+# bas
+
+just arch linux
