@@ -65,8 +65,7 @@ mountpoint -q /var/cache/pacman/pkg && hostcache='-c'
 pacstrap ${hostcache} /mnt \
   base linux-zen booster linux-firmware amd-ucode \
   dosfstools gptfdisk \
-  git flatpak \
-  micro zsh reflector mandoc less xxhash pigz unzip \
+  micro reflector mandoc less \
   polkit vulkan-radeon mesa \
   iptables-nft pipewire{,-alsa,-pulse,-jack} wpa_supplicant ${sbpkg}
 
